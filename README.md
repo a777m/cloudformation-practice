@@ -6,4 +6,4 @@ This repository contains my attempts at trying the learn CF.
 
 I want to use building the following architecture as practice.
 
-![Project Omega](overview.pfd "Project Omega")
+![Project Omega](overview.png "Project Omega")
