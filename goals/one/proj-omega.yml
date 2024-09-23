@@ -1,0 +1,356 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: |
+  A VPC with an internet gateway, two route tables (pub/priv), network access
+  control list, three subnets groups (2 pub, 1 priv), a security group for HTTP,
+  HTTPS, SSH and ICMP, an S3 bucket and two EC2 instances one of which has a
+  public IP and is reachable via ping and SSH.
+
+Resources:
+  # VPC
+  NewVPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.0.0.0/16
+      InstanceTenancy: default
+      Tags:
+        - Key: name
+          Value: PO-CF-practice
+
+  # internet gateway
+  IGW:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: name
+          Value: PO-IGW
+
+  # connect IGW to VPC
+  VPCConnIGW:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      InternetGatewayId: !Ref IGW
+      VpcId: !Ref NewVPC
+
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref NewVPC
+      Tags:
+        - Key: name
+          Value: pub-route-table
+
+  PrivateRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref NewVPC
+      Tags:
+        - Key: name
+          Value: priv-route-table
+
+  # route to connect RT to IGW. Note: local route comes for free
+  RouteToIGW:
+    Type: AWS::EC2::Route
+    DependsOn: VPCConnIGW
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref IGW
+      RouteTableId: !Ref PublicRouteTable
+
+  # NACL with allow policy for http(s), ssh and icmp
+  NACList:
+    Type: AWS::EC2::NetworkAcl
+    Properties:
+      VpcId: !Ref NewVPC
+      Tags:
+        - Key: name
+          Value: PO-NACL
+
+  NCLHTTPIn:
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      NetworkAclId: !Ref NACList
+      CidrBlock: 0.0.0.0/0
+      Egress: false
+      PortRange:
+        From: 80
+        To: 80
+      Protocol: 6 # TPC
+      RuleAction: allow
+      RuleNumber: 80
+
+  NCLHTTPOut:
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      NetworkAclId: !Ref NACList
+      CidrBlock: 0.0.0.0/0
+      Egress: true
+      PortRange:
+        From: 80
+        To: 80
+      Protocol: 6 # TPC
+      RuleAction: allow
+      RuleNumber: 80
+
+  NCLHTTPSIn:
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      NetworkAclId: !Ref NACList
+      CidrBlock: 0.0.0.0/0
+      Egress: false
+      PortRange:
+        From: 443
+        To: 443
+      Protocol: 6 # TPC
+      RuleAction: allow
+      RuleNumber: 433
+
+  NCLHTTPSOut:
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      NetworkAclId: !Ref NACList
+      CidrBlock: 0.0.0.0/0
+      Egress: true
+      PortRange:
+        From: 443
+        To: 443
+      Protocol: 6 # TPC
+      RuleAction: allow
+      RuleNumber: 433
+
+  NCLSSHIn:
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      NetworkAclId: !Ref NACList
+      CidrBlock: 0.0.0.0/0
+      Egress: false
+      PortRange:
+        From: 22
+        To: 22
+      Protocol: 6 # TPC
+      RuleAction: allow
+      RuleNumber: 22
+
+  NCLSSHOut:
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      NetworkAclId: !Ref NACList
+      CidrBlock: 0.0.0.0/0
+      Egress: true
+      PortRange:
+        From: 22
+        To: 22
+      Protocol: 6 # TPC
+      RuleAction: allow
+      RuleNumber: 22
+
+  NCLPingIn:
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      NetworkAclId: !Ref NACList
+      CidrBlock: 0.0.0.0/0
+      Egress: false
+      Protocol: 1 # ICMP
+      RuleAction: allow
+      RuleNumber: 100
+      Icmp:
+        Code: 0
+        Type: 8
+
+  NCLPingOut:
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      NetworkAclId: !Ref NACList
+      CidrBlock: 0.0.0.0/0
+      Egress: true
+      Protocol: 1 # ICMP
+      RuleAction: allow
+      RuleNumber: 100
+      Icmp:
+        Code: 0
+        Type: 0
+
+  # create a subnet in each availability zone. 2 pub, 1 priv
+  # Note: the London region has 3 availability zones
+  PublicSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: eu-west-2a
+      CidrBlock: 10.0.1.0/24
+      VpcId: !Ref NewVPC
+
+  PublicSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: eu-west-2b
+      CidrBlock: 10.0.2.0/24
+      VpcId: !Ref NewVPC
+
+  PrivateSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: eu-west-2c
+      CidrBlock: 10.0.3.0/24
+      VpcId: !Ref NewVPC
+
+  # Public Subnet 1 -> Public RouteTable
+  PubSub1ToPubRT:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      SubnetId: !Ref PublicSubnet1
+
+  # Public Subnet 2 -> Public RouteTable
+  PubSub2ToPubRT:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      SubnetId: !Ref PublicSubnet2
+
+  # Private Subnet 1 -> Private RouteTable
+  Priv1SubToPrivRT:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable
+      SubnetId: !Ref PrivateSubnet1
+
+  # attach subnets to NACL
+  Pub1ToNACL:
+    Type: AWS::EC2::SubnetNetworkAclAssociation
+    Properties:
+      NetworkAclId: !Ref NACList
+      SubnetId: !Ref PublicSubnet1
+
+  Pub2ToNACL:
+    Type: AWS::EC2::SubnetNetworkAclAssociation
+    Properties:
+      NetworkAclId: !Ref NACList
+      SubnetId: !Ref PublicSubnet2
+
+  Priv1ToNACL:
+    Type: AWS::EC2::SubnetNetworkAclAssociation
+    Properties:
+      NetworkAclId: !Ref NACList
+      SubnetId: !Ref PrivateSubnet1
+
+  # security groups for EC2 instances
+  SGHTTP:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allow HTTP traffic
+      GroupName: PO HTTP SG
+      VpcId: !Ref NewVPC
+      # outbound traffic
+      SecurityGroupEgress:
+        # http
+        - IpProtocol: tcp
+          CidrIp: 0.0.0.0/0  # traffic can come from anywhere
+          Description: Outbound HTTP traffic
+          FromPort: 80
+          ToPort: 80
+        # https
+        - IpProtocol: tcp
+          Description: Outbound HTTPS traffic
+          CidrIp: 0.0.0.0/0
+          FromPort: 443
+          ToPort: 443
+        # ssh
+        - IpProtocol: tcp
+          CidrIp: 0.0.0.0/0
+          Description: Outboung SSH traffic
+          FromPort: 22
+          ToPort: 22
+        # ping request
+        - IpProtocol: icmp
+          CidrIp: 0.0.0.0/0
+          FromPort: 0
+          ToPort: 0
+      # inbound traffic
+      SecurityGroupIngress:
+        # http
+        - IpProtocol: tcp
+          Description: Allow Inbound HTTP traffic
+          CidrIp: 0.0.0.0/0
+          FromPort: 80
+          ToPort: 80
+        # https
+        - IpProtocol: tcp
+          Description: Allow Inbound HTTPS traffic
+          CidrIp: 0.0.0.0/0
+          FromPort: 443
+          ToPort: 443
+        # ssh
+        - IpProtocol: tcp
+          CidrIp: 0.0.0.0/0
+          Description: Outboung SSH traffic
+          FromPort: 22
+          ToPort: 22
+        # ping request
+        - IpProtocol: icmp
+          CidrIp: 0.0.0.0/0
+          FromPort: 8
+          ToPort: 0
+
+  # S3
+  PoS3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: po-test-bucket1 # must be globally unique and lower case
+      Tags:
+        - Key: description
+          Value: PO-S3-Bucket
+
+  # SSH key
+  SSHKeyPair:
+    Type: AWS::EC2::KeyPair
+    Properties:
+      KeyName: a777m-ssh-key
+      KeyType: ed25519
+      PublicKeyMaterial: >-
+        ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMZ+lUbV6jHfVLtgY5UpIHbJfHC9IMqh+jadsVGBRZyN ahmed.mahdi@bbc.co.uk
+      Tags:
+        - Key: key-name
+          Value: a777m-ssh-key
+
+  # EC2 in public subnet 1
+  PoEC2Instance1:
+    Type: AWS::EC2::Instance
+    DependsOn: IGW
+    Properties:
+      ImageId: ami-0b45ae66668865cd6
+      InstanceType: t2.micro
+      KeyName: !Ref SSHKeyPair
+      # give this host a public ip address
+      NetworkInterfaces:
+        - AssociatePublicIpAddress: true
+          Description: Custom public IP NI
+          DeviceIndex: 0
+          GroupSet:
+            - !Ref SGHTTP
+          SubnetId: !Ref PublicSubnet1
+      Tags:
+        - Key: description
+          Value: EC2-public-subnet-1
+
+  # EC2 in public subnet 2
+  PoEC2Instance2:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: ami-0b45ae66668865cd6
+      InstanceType: t2.micro
+      SubnetId: !Ref PublicSubnet2
+      KeyName: !Ref SSHKeyPair
+      SecurityGroupIds:
+        - !Ref SGHTTP
+      Tags:
+        - Key: description
+          Value: EC2-public-subnet-1
+
+Outputs:
+  MyStacksRegion:
+    Value: !Ref "AWS::Region"
+
+  EC2PublicDNSName:
+    Value: !GetAtt PoEC2Instance1.PublicDnsName
+
+  EC2PublicIpAddr:
+    Value: !GetAtt PoEC2Instance1.PublicIp
