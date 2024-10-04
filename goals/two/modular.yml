@@ -141,7 +141,7 @@ Resources:
       RuleNumber: !FindInMap
         - Network
         - HTTP
-        - ProtocolNumber
+        - Port
 
   # HTTP outbound traffic
   NCLHTTPOut:
@@ -167,7 +167,7 @@ Resources:
       RuleNumber: !FindInMap
         - Network
         - HTTP
-        - ProtocolNumber
+        - Port
 
   # HTTPS inbound traffic
   NCLHTTPSIn:
@@ -193,7 +193,7 @@ Resources:
       RuleNumber: !FindInMap
         - Network
         - HTTPS
-        - ProtocolNumber
+        - Port
 
   # HTTPS outbound traffic
   NCLHTTPSOut:
@@ -219,7 +219,7 @@ Resources:
       RuleNumber: !FindInMap
         - Network
         - HTTPS
-        - ProtocolNumber
+        - Port
 
   # SSH inbound traffic
   NCLSSHIn:
@@ -245,7 +245,7 @@ Resources:
       RuleNumber: !FindInMap
         - Network
         - SSH
-        - ProtocolNumber
+        - Port
 
   # SSH outbound traffic
   NCLSSHOut:
@@ -271,7 +271,7 @@ Resources:
       RuleNumber: !FindInMap
         - Network
         - SSH
-        - ProtocolNumber
+        - Port
 
   # ICMP inbound request
   NCLPingIn:
