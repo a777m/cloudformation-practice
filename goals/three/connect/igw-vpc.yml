@@ -1,0 +1,9 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Connect an internet gatway to a VPC
+
+Resources:
+  IgwToVpcConnect:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      InternetGatewayId: !ImportValue GateWayId
+      VpcId: !ImportValue VPCId

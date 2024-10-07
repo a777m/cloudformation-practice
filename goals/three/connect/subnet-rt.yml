@@ -1,0 +1,27 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Connect subnets to route tables
+
+# This stack assumes it is being connected to London (eu-west-2) which has three
+# availability zones - a, b and c
+# We have a subnet in each AZ, two are publice one is private
+Resources:
+  # Public Subnet 1 -> Public RouteTable
+  PublicSubnet1ToPublicRouteTable:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !ImportValue PublicRouteTableId
+      SubnetId: !ImportValue PublicSubnet1Id
+
+  # Public Subnet 2 -> Public RouteTable
+  PublicSubnet2ToPublicRouteTable:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !ImportValue PublicRouteTableId
+      SubnetId: !ImportValue PublicSubnet2Id
+
+  # Private Subnet 1 -> Private RouteTable
+  PrivateSubnet1ToPrivateRouteTable:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !ImportValue PrivateRouteTableId
+      SubnetId: !ImportValue PrivateSubnet1Id

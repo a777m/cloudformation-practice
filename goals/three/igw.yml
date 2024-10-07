@@ -1,0 +1,20 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Interenet GateWay, connected to externally defined VPC
+
+# Stand alone internet gateway.
+# It's stand alone because its typical the IGWs can be (de)/attached to VPCs
+# on the fly. So rather than bind it to any particular VPC it can be
+# processed and handled by itself.
+Resources:
+  GateWay:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: name
+          Value: PO-IGW
+
+Outputs:
+  GateWayId:
+    Value: !Ref GateWay
+    Export:
+      Name: GateWayId

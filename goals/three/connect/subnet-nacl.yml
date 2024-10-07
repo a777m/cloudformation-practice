@@ -1,0 +1,25 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Connect subnets to route tables
+
+# Connect subnets to NACL
+Resources:
+  # public subnet 1 -> NACL
+  PublicSubnet1ToNACL:
+    Type: AWS::EC2::SubnetNetworkAclAssociation
+    Properties:
+      NetworkAclId: !ImportValue NACListId
+      SubnetId: !ImportValue PublicSubnet1Id
+
+  # public subnet 2 -> NACL
+  PublicSubnet2ToNACL:
+    Type: AWS::EC2::SubnetNetworkAclAssociation
+    Properties:
+      NetworkAclId: !ImportValue NACListId
+      SubnetId: !ImportValue PublicSubnet2Id
+
+  # private subnet 1 -> NACL
+  PrivateSubnet1ToNACL:
+    Type: AWS::EC2::SubnetNetworkAclAssociation
+    Properties:
+      NetworkAclId: !ImportValue NACListId
+      SubnetId: !ImportValue PrivateSubnet1Id

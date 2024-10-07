@@ -1,0 +1,82 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: |
+  Public and private subnets. We create a subnet in each of three availability
+  zones of London (eu-west-2)
+
+Mappings:
+  AzAndCidr:
+    AvailabilityZoneA:
+      Az: a
+      CidrBlock: 10.0.1.0/24
+    AvailabilityZoneB:
+      Az: b
+      CidrBlock: 10.0.2.0/24
+    AvailabilityZoneC:
+      Az: c
+      CidrBlock: 10.0.3.0/24
+
+
+Resources:
+  PublicSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !Join
+        - ''
+        - - !Ref AWS::Region
+          - !FindInMap
+            - AzAndCidr
+            - AvailabilityZoneA
+            - Az
+      CidrBlock: !FindInMap
+        - AzAndCidr
+        - AvailabilityZoneA
+        - CidrBlock
+      VpcId: !ImportValue VPCId
+
+  PublicSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !Join
+        - ''
+        - - !Ref AWS::Region
+          - !FindInMap
+            - AzAndCidr
+            - AvailabilityZoneB
+            - Az
+      CidrBlock: !FindInMap
+        - AzAndCidr
+        - AvailabilityZoneB
+        - CidrBlock
+      VpcId: !ImportValue VPCId
+
+  PrivateSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !Join
+        - ''
+        - - !Ref AWS::Region
+          - !FindInMap
+            - AzAndCidr
+            - AvailabilityZoneC
+            - Az
+      CidrBlock: !FindInMap
+        - AzAndCidr
+        - AvailabilityZoneC
+        - CidrBlock
+      VpcId: !ImportValue VPCId
+
+Outputs:
+  PublicSubnet1Id:
+    Value: !Ref PublicSubnet1
+    Export:
+      Name: PublicSubnet1Id
+
+  PublicSubnet2Id:
+    Value: !Ref PublicSubnet2
+    Export:
+      Name: PublicSubnet2Id
+
+  PrivateSubnet1Id:
+    Value: !Ref PrivateSubnet1
+    Export:
+      Name: PrivateSubnet1Id

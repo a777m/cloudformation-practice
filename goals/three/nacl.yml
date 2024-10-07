@@ -1,0 +1,246 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Network access control list allowing http(s), ssh and icmp
+
+Mappings:
+  # map of port numbers and protocols for acceptable network traffic
+  Network:
+    HTTP:
+      Protocol: tcp
+      ProtocolNumber: 6
+      Port: 80
+    HTTPS:
+      protocol: tcp
+      ProtocolNumber: 6
+      Port: 443
+    SSH:
+      Protocol: tcp
+      ProtocolNumber: 6
+      Port: 22
+    ICMPRequest:
+      Protocol: icmp
+      ProtocolNumber: 1
+      Code: 0
+      Type: 8
+    ICMPReply:
+      Protocol: icmp
+      ProtocolNumber: 1
+      Code: 0
+      Type: 0
+
+Resources:
+  # NACL with allow policy for http(s), ssh and icmp
+  NACList:
+    Type: AWS::EC2::NetworkAcl
+    Properties:
+      VpcId: !ImportValue VPCId
+      Tags:
+        - Key: name
+          Value: PO-NACL
+
+  # HTTP inbound traffic
+  NCLHTTPIn:
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      NetworkAclId: !Ref NACList
+      CidrBlock: 0.0.0.0/0
+      Egress: false
+      PortRange:
+        From: !FindInMap
+          - Network
+          - HTTP
+          - Port
+        To: !FindInMap
+          - Network
+          - HTTP
+          - Port
+      Protocol: !FindInMap
+        - Network
+        - HTTP
+        - ProtocolNumber
+      RuleAction: allow
+      RuleNumber: !FindInMap
+        - Network
+        - HTTP
+        - Port
+
+  # HTTP outbound traffic
+  NCLHTTPOut:
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      NetworkAclId: !Ref NACList
+      CidrBlock: 0.0.0.0/0
+      Egress: true
+      PortRange:
+        From: !FindInMap
+          - Network
+          - HTTP
+          - Port
+        To: !FindInMap
+          - Network
+          - HTTP
+          - Port
+      Protocol: !FindInMap
+        - Network
+        - HTTP
+        - ProtocolNumber
+      RuleAction: allow
+      RuleNumber: !FindInMap
+        - Network
+        - HTTP
+        - Port
+
+  # HTTPS inbound traffic
+  NCLHTTPSIn:
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      NetworkAclId: !Ref NACList
+      CidrBlock: 0.0.0.0/0
+      Egress: false
+      PortRange:
+        From: !FindInMap
+          - Network
+          - HTTPS
+          - Port
+        To: !FindInMap
+          - Network
+          - HTTPS
+          - Port
+      Protocol: !FindInMap
+        - Network
+        - HTTPS
+        - ProtocolNumber
+      RuleAction: allow
+      RuleNumber: !FindInMap
+        - Network
+        - HTTPS
+        - Port
+
+  # HTTPS outbound traffic
+  NCLHTTPSOut:
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      NetworkAclId: !Ref NACList
+      CidrBlock: 0.0.0.0/0
+      Egress: true
+      PortRange:
+        From: !FindInMap
+          - Network
+          - HTTPS
+          - Port
+        To: !FindInMap
+          - Network
+          - HTTPS
+          - Port
+      Protocol: !FindInMap
+        - Network
+        - HTTPS
+        - ProtocolNumber
+      RuleAction: allow
+      RuleNumber: !FindInMap
+        - Network
+        - HTTPS
+        - Port
+
+  # SSH inbound traffic
+  NCLSSHIn:
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      NetworkAclId: !Ref NACList
+      CidrBlock: 0.0.0.0/0
+      Egress: false
+      PortRange:
+        From: !FindInMap
+          - Network
+          - SSH
+          - Port
+        To: !FindInMap
+          - Network
+          - SSH
+          - Port
+      Protocol: !FindInMap
+        - Network
+        - SSH
+        - ProtocolNumber
+      RuleAction: allow
+      RuleNumber: !FindInMap
+        - Network
+        - SSH
+        - Port
+
+  # SSH outbound traffic
+  NCLSSHOut:
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      NetworkAclId: !Ref NACList
+      CidrBlock: 0.0.0.0/0
+      Egress: true
+      PortRange:
+        From: !FindInMap
+          - Network
+          - SSH
+          - Port
+        To: !FindInMap
+          - Network
+          - SSH
+          - Port
+      Protocol: !FindInMap
+        - Network
+        - SSH
+        - ProtocolNumber
+      RuleAction: allow
+      RuleNumber: !FindInMap
+        - Network
+        - SSH
+        - Port
+
+  # ICMP inbound request
+  NCLPingIn:
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      NetworkAclId: !Ref NACList
+      CidrBlock: 0.0.0.0/0
+      Egress: false
+      Protocol: !FindInMap
+        - Network
+        - ICMPRequest
+        - ProtocolNumber
+      RuleAction: allow
+      RuleNumber: 100
+      Icmp:
+        Code: !FindInMap
+          - Network
+          - ICMPRequest
+          - Code
+        Type: !FindInMap
+          - Network
+          - ICMPRequest
+          - Type
+
+  # ICMP outbound reply
+  NCLPingOut:
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      NetworkAclId: !Ref NACList
+      CidrBlock: 0.0.0.0/0
+      Egress: true
+      Protocol: !FindInMap
+        - Network
+        - ICMPReply
+        - ProtocolNumber
+      RuleAction: allow
+      RuleNumber: 100
+      Icmp:
+        Code: !FindInMap
+          - Network
+          - ICMPReply
+          - Code
+        Type: !FindInMap
+          - Network
+          - ICMPReply
+          - Type
+
+Outputs:
+  NACLId:
+    Value: !Ref NACList
+    Export:
+      Name: NACListId

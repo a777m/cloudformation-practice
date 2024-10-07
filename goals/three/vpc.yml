@@ -1,0 +1,42 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: A simple VPC
+
+Mappings:
+  Vpc:
+    Cidr:
+      CidrBlock: 10.0.0.0/16
+    InstanceTenancy:
+      Tenancy: default
+
+Resources:
+  NewVPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !FindInMap
+        - Vpc
+        - Cidr
+        - CidrBlock
+      InstanceTenancy: !FindInMap
+        - Vpc
+        - InstanceTenancy
+        - Tenancy
+      Tags:
+        - Key: name
+          Value: !Join
+            - ''
+            - - PO-CF-practice-
+              - !Ref AWS::Region
+
+Outputs:
+  MyStacksRegion:
+    Value: !Ref "AWS::Region"
+
+  VpcId:
+    Value: !GetAtt NewVPC.VpcId
+    Export:
+      Name: VPCId
+
+  VpcCidrBlock:
+    Value: !GetAtt NewVPC.CidrBlock
+    Export:
+      Name: VPCCidrBlock

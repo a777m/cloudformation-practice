@@ -1,0 +1,11 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Define a route from a public routetable to an internet gateway
+
+Resources:
+  # route to connect RT to IGW. Note: local route comes for free
+  RouteToIGW:
+    Type: AWS::EC2::Route
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !ImportValue GateWayId
+      RouteTableId: !ImportValue PublicRouteTableId
